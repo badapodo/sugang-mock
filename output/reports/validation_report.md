@@ -10,6 +10,6 @@ Overall: **PASS**
 | PASS | unique constraints | all configured unique keys unique |
 | PASS | physical and logical foreign keys | all references resolve |
 | PASS | hotspot course ratio | actual=200, expected=200 |
-| PASS | course time range | all times valid and aligned to 30 minutes |
+| PASS | course time range | all times are within 09:00-17:00 and aligned to 30 minutes |
 | PASS | prerequisite satisfiability | every rule is satisfiable by a student in its department |
 | PASS | course current_count | matches baseline enrollments |

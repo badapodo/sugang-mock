@@ -60,11 +60,11 @@ class Pipeline:
         self.csv_exporter.export_payload(context)
         self.sql_exporter.export(context)
 
-        print("[7/8] Generate Markdown reports")
-        self.report_exporter.export_analysis_reports(context, analysis)
+        print("[7/8] Generate CSV-driven visualization charts")
+        chart_results = self.chart_exporter.export(context, analysis)
 
-        print("[8/8] Generate visualization charts")
-        self.chart_exporter.export(context, analysis)
+        print("[8/8] Generate Markdown reports")
+        self.report_exporter.export_analysis_reports(context, analysis, chart_results)
 
         self._require_pass(domain_results, validation_path)
         self._require_pass(payload_results, payload_path)

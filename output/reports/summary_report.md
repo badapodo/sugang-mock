@@ -42,27 +42,70 @@ Overall: **PASS**
 - [Credit](credit_report.md)
 - [Distribution](distribution_report.md)
 
-## Performance-test design charts
+## Portfolio charts
 
-![Payload timeline](../charts/payload_timeline.png)
+### Payload Timeline
 
-![Course request rank distribution](../charts/course_request_rank_distribution.png)
+- 파일: `payload_timeline.png`
+- 목적: 0~30초 요청 분포가 의도한 burst traffic을 형성하는지 검증
+- 해석: 0~10초 요청 비율은 60.0%이며 설정값 60.0%와 일치함
+- 결과: **PASS**
 
-![Hotspot competition](../charts/hotspot_competition.png)
+![Payload Timeline](../charts/payload_timeline.png)
 
-![Validation coverage](../charts/validation_coverage.png)
+### Course Request Rank Distribution
 
-![Hotspot summary](../charts/hotspot_summary.png)
+- 파일: `course_request_rank_distribution.png`
+- 목적: 상위 5% 과목에 요청이 집중되고 Hotspot/Normal 경계가 분리되는지 검증
+- 해석: Rank 200 경계에서 최소 hotspot 요청 56건, 최대 normal 요청 26건으로 급격한 감소가 확인됨
+- 결과: **PASS**
 
-## Validation detail charts
+![Course Request Rank Distribution](../charts/course_request_rank_distribution.png)
 
-![Hotspot distribution](../charts/hotspot_distribution.png)
+### Hotspot Competition
 
-![Enrollment distribution](../charts/enrollment_distribution.png)
+- 파일: `hotspot_competition.png`
+- 목적: 상위 20개 인기 과목이 정원을 초과하는 경쟁 상태인지 검증
+- 해석: 상위 20개 과목의 요청은 평균 정원의 6.2배이며 모두 정원을 초과함
+- 결과: **PASS**
 
-![Timeslot heatmap](../charts/timeslot_heatmap.png)
+![Hotspot Competition](../charts/hotspot_competition.png)
 
-![Prerequisite validation](../charts/prerequisite_validation.png)
+### Prerequisite Validation
+
+- 파일: `prerequisite_validation.png`
+- 목적: PREREQUISITE_FAIL 요청이 실제 선수과목 미이수 상태인지 검증
+- 해석: 대상 3,200건 중 3,200건이 의도한 실패 조건을 충족하고 잘못 생성된 요청은 0건임
+- 결과: **PASS**
+
+![Prerequisite Validation](../charts/prerequisite_validation.png)
+
+### Generated Test Scenario Coverage
+
+- 파일: `validation_coverage.png`
+- 목적: 성능·도메인 테스트에 필요한 주요 시나리오가 실제 payload에 포함되었는지 검증
+- 해석: NORMAL 64,000건, HOTSPOT 48,000건, 선수과목/시간충돌 각 3,200/3,200건이며 CREDIT_LIMIT은 엔티티 제약으로 N/A
+- 결과: **PASS**
+
+![Generated Test Scenario Coverage](../charts/validation_coverage.png)
+
+### Timeslot Heatmap
+
+- 파일: `timeslot_heatmap.png`
+- 목적: 실제 대학 시간표처럼 10~12시와 13~15시에 강의가 집중되는지 검증
+- 해석: 피크 시간대 슬롯당 평균 84.6개, 비피크 시간대 20.5개로 피크 집중도가 더 높음
+- 결과: **PASS**
+
+![Timeslot Heatmap](../charts/timeslot_heatmap.png)
+
+### Course Capacity Utilization
+
+- 파일: `course_capacity_utilization.png`
+- 목적: 강의별 요청 수/정원 비율과 hotspot 과목의 초과 경쟁 상태를 검증
+- 해석: Hotspot 200개 중 200개가 정원 대비 100% 이상의 요청을 받아 초과 경쟁 상태임
+- 결과: **PASS**
+
+![Course Capacity Utilization](../charts/course_capacity_utilization.png)
 
 ## Appendix: population distribution
 

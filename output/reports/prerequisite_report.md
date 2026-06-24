@@ -11,5 +11,3 @@ Result: **PASS**
 Validation is request-scoped: the student's department-specific required course must exist and must be absent from completed courses.
 
 ![Prerequisite validation](../charts/prerequisite_validation.png)
-
-![Prerequisite graph](../charts/prerequisite_graph.png)

@@ -66,9 +66,9 @@ class DomainValidator:
         for row in context.data["course_time"]:
             start = time.fromisoformat(row["start_time"])
             end = time.fromisoformat(row["end_time"])
-            if not (time(9) <= start < end <= time(18)) or start.minute % 30 or end.minute % 30:
+            if not (time(9) <= start < end <= time(17)) or start.minute % 30 or end.minute % 30:
                 time_failures.append(row["id"])
-        results.append(result("course time range", not time_failures, time_failures[:10] or "all times valid and aligned to 30 minutes"))
+        results.append(result("course time range", not time_failures, time_failures[:10] or "all times are within 09:00-17:00 and aligned to 30 minutes"))
 
         completed = context.metadata["completed_by_student"]
         students_by_department = defaultdict(list)
@@ -84,4 +84,3 @@ class DomainValidator:
         current_mismatch = [row["id"] for row in context.data["course"] if row["current_count"] != course_counts[row["id"]]]
         results.append(result("course current_count", not current_mismatch, current_mismatch[:10] or "matches baseline enrollments"))
         return results
-

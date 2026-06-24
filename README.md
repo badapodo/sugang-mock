@@ -10,7 +10,13 @@ python3 -m venv .venv
 
 생성 결과는 `output/csv`, `output/sql`, `output/reports`, `output/charts`에 저장된다. DB 적재는 프로젝트 루트에서 다음처럼 실행한다.
 
-성능 테스트 설계의 핵심 차트는 payload timeline, course request rank, hotspot competition, validation coverage, hotspot summary이며, 학년·학과 분포는 `output/charts/appendix`에 보조 자료로 생성된다. 모든 차트 하단에는 해당 차트가 검증하는 목적이 자동으로 포함된다.
+성능 테스트 설계의 핵심 차트는 payload timeline, course request rank, hotspot competition, prerequisite validation, generated test scenario coverage, timeslot heatmap, course capacity utilization이다. 보조 분포 차트는 `output/charts/appendix`에 생성된다. 모든 차트 하단에는 해당 차트가 검증하는 목적이 자동으로 포함된다.
+
+CSV 생성 없이 기존 산출물만 다시 시각화할 수도 있다.
+
+```bash
+.venv/bin/python scripts/generate_charts.py --output output --scenario config/scenario.yaml
+```
 
 ```bash
 psql "$DATABASE_URL" -f output/sql/load.sql
