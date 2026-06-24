@@ -34,7 +34,11 @@ class ReportExporter:
             f"| Hotspot courses | {metric['expected_course_ratio']:.2%} | {metric['hotspot_course_count']:,} ({metric['course_ratio']:.2%}) |",
             f"| Total requests | {metric['request_total']:,} | {metric['request_total']:,} |",
             f"| Hotspot requests | {metric['expected_request_ratio']:.2%} | {metric['hotspot_request_count']:,} ({metric['request_ratio']:.2%}) |",
-            "", "![Hotspot distribution](../charts/hotspot_distribution.png)",
+            "", "## Performance-test design charts", "",
+            "![Hotspot summary](../charts/hotspot_summary.png)", "",
+            "![Course request rank](../charts/course_request_rank_distribution.png)", "",
+            "![Hotspot competition](../charts/hotspot_competition.png)", "",
+            "![Hotspot distribution](../charts/hotspot_distribution.png)",
         ])
 
     def _prerequisite(self, path, metric):
@@ -91,8 +95,9 @@ class ReportExporter:
             f"- Departments: {len(metric['department_counts']):,}",
             f"- Minimum students per department: {min(metric['department_counts'].values()):,}",
             f"- Maximum students per department: {max(metric['department_counts'].values()):,}", "",
-            "![Student year distribution](../charts/student_year_distribution.png)", "",
-            "![Department distribution](../charts/department_distribution.png)",
+            "The following population charts are supporting evidence rather than the main performance-test narrative.", "",
+            "![Student year distribution](../charts/appendix/student_year_distribution.png)", "",
+            "![Department distribution](../charts/appendix/department_distribution.png)",
         ])
 
     def _summary(self, path, context, analysis):
@@ -127,11 +132,18 @@ class ReportExporter:
             "- [Schedule](schedule_report.md)",
             "- [Credit](credit_report.md)",
             "- [Distribution](distribution_report.md)", "",
-            "## Charts", "",
+            "## Performance-test design charts", "",
+            "![Payload timeline](../charts/payload_timeline.png)", "",
+            "![Course request rank distribution](../charts/course_request_rank_distribution.png)", "",
+            "![Hotspot competition](../charts/hotspot_competition.png)", "",
+            "![Validation coverage](../charts/validation_coverage.png)", "",
+            "![Hotspot summary](../charts/hotspot_summary.png)", "",
+            "## Validation detail charts", "",
             "![Hotspot distribution](../charts/hotspot_distribution.png)", "",
             "![Enrollment distribution](../charts/enrollment_distribution.png)", "",
-            "![Student year distribution](../charts/student_year_distribution.png)", "",
-            "![Department distribution](../charts/department_distribution.png)", "",
             "![Timeslot heatmap](../charts/timeslot_heatmap.png)", "",
-            "![Prerequisite validation](../charts/prerequisite_validation.png)",
+            "![Prerequisite validation](../charts/prerequisite_validation.png)", "",
+            "## Appendix: population distribution", "",
+            "![Student year distribution](../charts/appendix/student_year_distribution.png)", "",
+            "![Department distribution](../charts/appendix/department_distribution.png)",
         ])

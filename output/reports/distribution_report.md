@@ -17,6 +17,8 @@
 - Minimum students per department: 500
 - Maximum students per department: 500
 
-![Student year distribution](../charts/student_year_distribution.png)
+The following population charts are supporting evidence rather than the main performance-test narrative.
 
-![Department distribution](../charts/department_distribution.png)
+![Student year distribution](../charts/appendix/student_year_distribution.png)
+
+![Department distribution](../charts/appendix/department_distribution.png)
