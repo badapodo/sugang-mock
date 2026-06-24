@@ -1,0 +1,41 @@
+version: 1
+seed: 42
+
+scale:
+  departments: 80
+  students: 40000
+  courses: 4000
+  avg_courses_per_student: 5
+  course_times_per_course: 1
+  prerequisite_course_ratio: 0.20
+
+traffic:
+  active_users: 16000
+  active_user_ratio: 0.40
+  concurrent_user_ratio: 0.40
+  hotspot_course_ratio: 0.05
+  hotspot_request_ratio: 0.60
+  burst_window_ratio: 0.60
+
+course:
+  popular_capacity: 50
+  normal_capacity: 100
+  max_credit_per_student: 18
+
+payload:
+  total_requests: 80000
+  normal_ratio: 0.80
+  capacity_over_ratio: 0.08
+  duplicate_ratio: 0.04
+  prerequisite_fail_ratio: 0.04
+  time_conflict_ratio: 0.04
+  # 현재 엔티티에는 학점 컬럼이 없어 기본적으로 생성하지 않는다.
+  credit_limit_ratio: 0.00
+  expected_status:
+    NORMAL: 200
+    CAPACITY_OVER: 400
+    DUPLICATE: 400
+    PREREQUISITE_FAIL: 400
+    TIME_CONFLICT: 400
+    CREDIT_LIMIT: 400
+
