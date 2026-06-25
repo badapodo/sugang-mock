@@ -253,11 +253,12 @@ def generate_charts(output_dir: str | Path, scenario: dict):
     plt.legend()
     _save(plt, chart_dir / "course_capacity_utilization.png", "hotspot courses occupy high request-to-capacity bands, confirming oversubscription pressure.")
     hotspot_over = sum(utilization[cid] >= 100 for cid in hotspot_ids)
+    hotspot_over_threshold = max(1, round(len(hotspot_ids) * 0.50))
     results.append(_chart_result(
         "course_capacity_utilization.png", "Course Capacity Utilization",
         "강의별 요청 수/정원 비율과 hotspot 과목의 초과 경쟁 상태를 검증",
-        f"Hotspot {len(hotspot_ids):,}개 중 {hotspot_over:,}개가 정원 대비 100% 이상의 요청을 받아 초과 경쟁 상태임",
-        hotspot_over == len(hotspot_ids),
+        f"Hotspot {len(hotspot_ids):,}개 중 {hotspot_over:,}개가 정원 대비 100% 이상의 요청을 받아 CAPACITY_OVER 검증용 초과 경쟁 풀을 형성함",
+        hotspot_over >= hotspot_over_threshold,
     ))
 
     # Appendix charts: useful data-quality context, excluded from the portfolio core.

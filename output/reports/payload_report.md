@@ -1,6 +1,6 @@
 # Payload Validation Report
 
-Overall: **FAIL**
+Overall: **PASS**
 
 | Result | Rule | Detail |
 |---|---|---|
@@ -11,10 +11,10 @@ Overall: **FAIL**
 | PASS | payload references | all student/course IDs exist |
 | PASS | expected status mapping | all statuses match scenario type |
 | PASS | active users | actual=16000, expected=16000 |
-| FAIL | payload duplicate integrity | unexpected success duplicate pairs=232 |
-| FAIL | normal payload semantics | invalid NORMAL/success payloads=32455 |
-| FAIL | capacity_over semantics | invalid CAPACITY_OVER payloads=3947 |
-| FAIL | duplicate scenario semantics | invalid DUPLICATE payloads=2406 |
-| FAIL | time_conflict semantics | invalid TIME_CONFLICT payloads=2050 |
+| PASS | payload duplicate integrity | unexpected success duplicate pairs=0 |
+| PASS | normal payload semantics | invalid NORMAL/success payloads=0 |
+| PASS | capacity_over semantics | invalid CAPACITY_OVER payloads=0 |
+| PASS | duplicate scenario semantics | invalid DUPLICATE payloads=0 |
+| PASS | time_conflict semantics | invalid TIME_CONFLICT payloads=0 |
 | PASS | prerequisite_fail semantics | invalid PREREQUISITE_FAIL payloads=0 |
 | PASS | scenario label consistency | inconsistent labels=0 |

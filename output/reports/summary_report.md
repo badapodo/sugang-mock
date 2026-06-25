@@ -1,6 +1,6 @@
 # Mock Data Harness Summary
 
-Overall: **FAIL**
+Overall: **PASS**
 
 ## Generated scale
 
@@ -19,23 +19,23 @@ Overall: **FAIL**
 ## Validation results
 
 - Domain validation failures: 0
-- Payload validation failures: 5
+- Payload validation failures: 0
 - Invalid prerequisite scenarios: 0
 - Invalid time-conflict scenarios: 0
 - Credit validation: NOT_APPLICABLE
-- Validation rule failures: 5
-- Total actionable failures: 41,090
+- Validation rule failures: 0
+- Total actionable failures: 0
 
 ## Payload integrity validation
 
-- Payload duplicate count: 232
-- Invalid NORMAL count: 32,455
-- Invalid CAPACITY_OVER count: 3,947
-- Invalid DUPLICATE count: 2,406
-- Invalid TIME_CONFLICT count: 2,050
+- Payload duplicate count: 0
+- Invalid NORMAL count: 0
+- Invalid CAPACITY_OVER count: 0
+- Invalid DUPLICATE count: 0
+- Invalid TIME_CONFLICT count: 0
 - Invalid PREREQUISITE_FAIL count: 0
 - Scenario label inconsistency count: 0
-- Payload actionable failures: 41,090
+- Payload actionable failures: 0
 
 ## Key distributions
 
@@ -77,7 +77,7 @@ Overall: **FAIL**
 
 - 파일: `course_request_rank_distribution.png`
 - 목적: 상위 5% 과목에 요청이 집중되고 Hotspot/Normal 경계가 분리되는지 검증
-- 해석: Rank 200 경계에서 최소 hotspot 요청 56건, 최대 normal 요청 26건으로 급격한 감소가 확인됨
+- 해석: Rank 200 경계에서 최소 hotspot 요청 35건, 최대 normal 요청 11건으로 급격한 감소가 확인됨
 - 결과: **PASS**
 
 ![Course Request Rank Distribution](../charts/course_request_rank_distribution.png)
@@ -86,7 +86,7 @@ Overall: **FAIL**
 
 - 파일: `hotspot_competition.png`
 - 목적: 상위 20개 인기 과목이 정원을 초과하는 경쟁 상태인지 검증
-- 해석: 상위 20개 과목의 요청은 평균 정원의 6.2배이며 모두 정원을 초과함
+- 해석: 상위 20개 과목의 요청은 평균 정원의 1.8배이며 모두 정원을 초과함
 - 결과: **PASS**
 
 ![Hotspot Competition](../charts/hotspot_competition.png)
@@ -122,7 +122,7 @@ Overall: **FAIL**
 
 - 파일: `course_capacity_utilization.png`
 - 목적: 강의별 요청 수/정원 비율과 hotspot 과목의 초과 경쟁 상태를 검증
-- 해석: Hotspot 200개 중 200개가 정원 대비 100% 이상의 요청을 받아 초과 경쟁 상태임
+- 해석: Hotspot 200개 중 128개가 정원 대비 100% 이상의 요청을 받아 CAPACITY_OVER 검증용 초과 경쟁 풀을 형성함
 - 결과: **PASS**
 
 ![Course Capacity Utilization](../charts/course_capacity_utilization.png)

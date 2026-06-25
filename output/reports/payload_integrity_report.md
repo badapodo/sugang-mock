@@ -1,16 +1,16 @@
 # Payload Integrity Validation
 
-Overall: **FAIL**
+Overall: **PASS**
 
 | Check | Failures |
 |---|---:|
-| Payload duplicate count | 232 |
-| Invalid NORMAL count | 32,455 |
-| Invalid CAPACITY_OVER count | 3,947 |
-| Invalid DUPLICATE count | 2,406 |
-| Invalid TIME_CONFLICT count | 2,050 |
+| Payload duplicate count | 0 |
+| Invalid NORMAL count | 0 |
+| Invalid CAPACITY_OVER count | 0 |
+| Invalid DUPLICATE count | 0 |
+| Invalid TIME_CONFLICT count | 0 |
 | Invalid PREREQUISITE_FAIL count | 0 |
 | Scenario label inconsistency count | 0 |
-| Total actionable failures | 41,090 |
+| Total actionable failures | 0 |
 
 The payload is validated in scheduled execution order using `scheduled_offset_ms` and request_id as a stable tie-breaker.
