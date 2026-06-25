@@ -1,6 +1,6 @@
 # Mock Data Harness Summary
 
-Overall: **PASS**
+Overall: **FAIL**
 
 ## Generated scale
 
@@ -19,11 +19,23 @@ Overall: **PASS**
 ## Validation results
 
 - Domain validation failures: 0
-- Payload validation failures: 0
+- Payload validation failures: 5
 - Invalid prerequisite scenarios: 0
 - Invalid time-conflict scenarios: 0
 - Credit validation: NOT_APPLICABLE
-- Total actionable failures: 0
+- Validation rule failures: 5
+- Total actionable failures: 41,090
+
+## Payload integrity validation
+
+- Payload duplicate count: 232
+- Invalid NORMAL count: 32,455
+- Invalid CAPACITY_OVER count: 3,947
+- Invalid DUPLICATE count: 2,406
+- Invalid TIME_CONFLICT count: 2,050
+- Invalid PREREQUISITE_FAIL count: 0
+- Scenario label inconsistency count: 0
+- Payload actionable failures: 41,090
 
 ## Key distributions
 
@@ -36,6 +48,14 @@ Overall: **PASS**
 
 - [Core validation](validation_report.md)
 - [Payload validation](payload_report.md)
+- [Payload integrity](payload_integrity_report.md)
+- [Duplicate payload](duplicate_payload_report.md)
+- [NORMAL payload validation](normal_payload_validation_report.md)
+- [CAPACITY_OVER validation](capacity_over_validation_report.md)
+- [DUPLICATE scenario validation](duplicate_scenario_validation_report.md)
+- [TIME_CONFLICT validation](time_conflict_validation_report.md)
+- [PREREQUISITE_FAIL validation](prerequisite_payload_validation_report.md)
+- [Scenario label consistency](scenario_label_consistency_report.md)
 - [Hotspot](hotspot_report.md)
 - [Prerequisite](prerequisite_report.md)
 - [Schedule](schedule_report.md)
