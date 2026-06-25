@@ -43,17 +43,21 @@ class ValidationAnalyzer:
         }
 
         time_by_course = {row["course_id"]: row for row in context.data["course_time"]}
-        normal_by_student = defaultdict(list)
-        for row in payload:
-            if row["scenario_type"] == "NORMAL":
-                normal_by_student[row["student_id"]].append(row["course_id"])
-        time_targets = [row for row in payload if row["scenario_type"] == "TIME_CONFLICT"]
+        success_by_student = defaultdict(list)
+        time_targets = []
         missing_conflicts = []
-        for row in time_targets:
-            selected = time_by_course[row["course_id"]]
-            found = any(self._overlaps(selected, time_by_course[course_id]) for course_id in normal_by_student[row["student_id"]])
-            if not found:
-                missing_conflicts.append(row)
+        ordered_payload = sorted(enumerate(payload, 1), key=lambda item: (item[1]["scheduled_offset_ms"], item[0]))
+        for _, row in ordered_payload:
+            if row["scenario_type"] in {"NORMAL", "HOTSPOT"} or str(row["expected_status"]) == "200":
+                success_by_student[row["student_id"]].append(row["course_id"])
+                continue
+
+            if row["scenario_type"] == "TIME_CONFLICT":
+                time_targets.append(row)
+                selected = time_by_course[row["course_id"]]
+                found = any(self._overlaps(selected, time_by_course[course_id]) for course_id in success_by_student[row["student_id"]])
+                if not found:
+                    missing_conflicts.append(row)
         schedule = {
             "students_checked": len(students),
             "baseline_enrollment_count": len(context.data["enrollment"]),

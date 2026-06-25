@@ -28,7 +28,7 @@ class PayloadValidator:
         results.append(result("scheduled offset distribution", valid_offsets and abs(burst / total - target_burst) <= 0.02, f"0-10s={burst/total:.4f}, 10-30s={tail/total:.4f}"))
 
         actual_types = Counter(row["scenario_type"] for row in rows)
-        expected_types = allocate_scenario_counts(payload)
+        expected_types = self._expected_scenario_distribution(context)
         actual_with_zeroes = {name: actual_types.get(name, 0) for name in expected_types}
         results.append(result("scenario type ratios", actual_with_zeroes == expected_types, f"actual={actual_with_zeroes}, expected={expected_types}"))
 
@@ -49,6 +49,8 @@ class PayloadValidator:
         context.metadata["payload_integrity"] = integrity
 
         results.extend([
+            result("payload scenario distribution integrity", integrity["scenario_distribution_mismatch_count"] == 0, f"mismatches={integrity['scenario_distribution_mismatch_count']}, actual={integrity['scenario_distribution_actual']}, expected={integrity['scenario_distribution_expected']}"),
+            result("payload expected_status distribution integrity", integrity["expected_status_distribution_mismatch_count"] == 0, f"mismatches={integrity['expected_status_distribution_mismatch_count']}, actual={integrity['expected_status_distribution_actual']}, expected={integrity['expected_status_distribution_expected']}"),
             result("payload duplicate integrity", integrity["payload_duplicate_count"] == 0, f"unexpected success duplicate pairs={integrity['payload_duplicate_count']}"),
             result("normal payload semantics", integrity["invalid_normal_count"] == 0, f"invalid NORMAL/success payloads={integrity['invalid_normal_count']}"),
             result("capacity_over semantics", integrity["invalid_capacity_over_count"] == 0, f"invalid CAPACITY_OVER payloads={integrity['invalid_capacity_over_count']}"),
@@ -58,6 +60,37 @@ class PayloadValidator:
             result("scenario label consistency", integrity["scenario_label_inconsistency_count"] == 0, f"inconsistent labels={integrity['scenario_label_inconsistency_count']}"),
         ])
         return results
+
+    @staticmethod
+    def _expected_scenario_distribution(context):
+        payload = context.scenario["payload"]
+        total = payload["total_requests"]
+        base_counts = allocate_scenario_counts(payload)
+        failure_count = (
+            base_counts.get("CAPACITY_OVER", 0)
+            + base_counts.get("DUPLICATE", 0)
+            + base_counts.get("PREREQUISITE_FAIL", 0)
+            + base_counts.get("TIME_CONFLICT", 0)
+        )
+        target_hotspot_requests = round(total * context.scenario["traffic"]["hotspot_request_ratio"])
+        hotspot_success_count = target_hotspot_requests - failure_count
+        normal_success_count = base_counts.get("NORMAL", 0) - hotspot_success_count
+        if hotspot_success_count < 0 or normal_success_count < 0:
+            hotspot_success_count = max(0, hotspot_success_count)
+            normal_success_count = max(0, normal_success_count)
+
+        expected = {
+            "NORMAL": normal_success_count,
+            "HOTSPOT": hotspot_success_count,
+            "CAPACITY_OVER": base_counts.get("CAPACITY_OVER", 0),
+            "DUPLICATE": base_counts.get("DUPLICATE", 0),
+            "PREREQUISITE_FAIL": base_counts.get("PREREQUISITE_FAIL", 0),
+            "TIME_CONFLICT": base_counts.get("TIME_CONFLICT", 0),
+        }
+        credit_limit = base_counts.get("CREDIT_LIMIT", 0)
+        if credit_limit:
+            expected["CREDIT_LIMIT"] = credit_limit
+        return expected
 
     def _validate_payload_semantics(self, context, rows):
         courses = {row["id"]: row for row in context.data["course"]}
@@ -91,6 +124,36 @@ class PayloadValidator:
         invalid_time_conflict = []
         invalid_prerequisite_fail = []
         label_inconsistencies = []
+        expected_scenario_distribution = self._expected_scenario_distribution(context)
+        actual_scenario_distribution = Counter(row["scenario_type"] for row in rows)
+        scenario_distribution_mismatches = [
+            {
+                "scenario_type": scenario_type,
+                "expected": expected,
+                "actual": actual_scenario_distribution.get(scenario_type, 0),
+            }
+            for scenario_type, expected in expected_scenario_distribution.items()
+            if actual_scenario_distribution.get(scenario_type, 0) != expected
+        ]
+        unexpected_scenario_types = sorted(set(actual_scenario_distribution) - set(expected_scenario_distribution))
+        for scenario_type in unexpected_scenario_types:
+            scenario_distribution_mismatches.append({
+                "scenario_type": scenario_type,
+                "expected": 0,
+                "actual": actual_scenario_distribution[scenario_type],
+            })
+
+        expected_status_distribution = Counter(str(context.scenario["payload"]["expected_status"][scenario_type]) for scenario_type, count in expected_scenario_distribution.items() for _ in range(count))
+        actual_status_distribution = Counter(str(row["expected_status"]) for row in rows)
+        expected_status_mismatches = [
+            {
+                "expected_status": expected_status,
+                "expected": expected,
+                "actual": actual_status_distribution.get(expected_status, 0),
+            }
+            for expected_status, expected in expected_status_distribution.items()
+            if actual_status_distribution.get(expected_status, 0) != expected
+        ]
 
         for row in ordered_rows:
             scenario_type = row["scenario_type"]
@@ -175,12 +238,20 @@ class PayloadValidator:
             "invalid_time_conflict": invalid_time_conflict,
             "invalid_prerequisite_fail": invalid_prerequisite_fail,
             "scenario_label_inconsistencies": label_inconsistencies,
+            "scenario_distribution_expected": dict(expected_scenario_distribution),
+            "scenario_distribution_actual": {name: actual_scenario_distribution.get(name, 0) for name in expected_scenario_distribution},
+            "scenario_distribution_mismatches": scenario_distribution_mismatches,
+            "expected_status_distribution_expected": dict(expected_status_distribution),
+            "expected_status_distribution_actual": dict(actual_status_distribution),
+            "expected_status_distribution_mismatches": expected_status_mismatches,
             "invalid_normal_count": len(invalid_normal),
             "invalid_capacity_over_count": len(invalid_capacity_over),
             "invalid_duplicate_count": len(invalid_duplicate),
             "invalid_time_conflict_count": len(invalid_time_conflict),
             "invalid_prerequisite_fail_count": len(invalid_prerequisite_fail),
             "scenario_label_inconsistency_count": len(label_inconsistencies),
+            "scenario_distribution_mismatch_count": len(scenario_distribution_mismatches),
+            "expected_status_distribution_mismatch_count": len(expected_status_mismatches),
         }
         integrity["total_actionable_failures"] = (
             integrity["payload_duplicate_count"]
@@ -190,6 +261,8 @@ class PayloadValidator:
             + integrity["invalid_time_conflict_count"]
             + integrity["invalid_prerequisite_fail_count"]
             + integrity["scenario_label_inconsistency_count"]
+            + integrity["scenario_distribution_mismatch_count"]
+            + integrity["expected_status_distribution_mismatch_count"]
         )
         return integrity
 

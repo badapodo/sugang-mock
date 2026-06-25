@@ -108,14 +108,16 @@ class StatefulPayloadBuilder:
             target_count=hotspot_success_count,
             course_pool=self.safe_hotspot_ids,
             fill_subset=True,
+            scenario_type="HOTSPOT",
         )
         self._build_success_pool(
             target_count=normal_success_count,
             course_pool=self.safe_normal_ids,
             fill_subset=False,
+            scenario_type="NORMAL",
         )
 
-    def _build_success_pool(self, target_count, course_pool, fill_subset):
+    def _build_success_pool(self, target_count, course_pool, fill_subset, scenario_type):
         if target_count <= 0:
             return
         if not course_pool:
@@ -156,7 +158,7 @@ class StatefulPayloadBuilder:
         for course_id, amount in target_by_course.items():
             for _ in range(amount):
                 student_id, student_index = self._find_success_student(course_id, student_index)
-                self._append_success(student_id, course_id)
+                self._append_success(student_id, course_id, scenario_type)
 
     def _find_success_student(self, course_id, start_index):
         total_students = len(self.active_students)
@@ -186,13 +188,13 @@ class StatefulPayloadBuilder:
             return False
         return True
 
-    def _append_success(self, student_id, course_id):
+    def _append_success(self, student_id, course_id, scenario_type):
         self.used_student_course_pairs.add((student_id, course_id))
         self.student_enrolled_courses[student_id].add(course_id)
         self.student_enrolled_timeslots[student_id].append(self.course_times[course_id])
         self.course_success_count[course_id] += 1
         self.success_pairs.append((student_id, course_id))
-        self._append_row(student_id, course_id, "NORMAL")
+        self._append_row(student_id, course_id, scenario_type)
 
     def _build_capacity_over(self, count):
         full_courses = [course_id for course_id in self.hotspot_ids if self.course_success_count[course_id] >= self.courses[course_id]["capacity"]]

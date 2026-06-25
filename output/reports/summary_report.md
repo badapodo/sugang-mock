@@ -29,6 +29,8 @@ Overall: **PASS**
 ## Payload integrity validation
 
 - Payload duplicate count: 0
+- Scenario distribution mismatch count: 0
+- Expected status distribution mismatch count: 0
 - Invalid NORMAL count: 0
 - Invalid CAPACITY_OVER count: 0
 - Invalid DUPLICATE count: 0
@@ -36,6 +38,24 @@ Overall: **PASS**
 - Invalid PREREQUISITE_FAIL count: 0
 - Scenario label inconsistency count: 0
 - Payload actionable failures: 0
+
+### Payload scenario distribution
+
+| scenario_type | Expected | Actual |
+|---|---:|---:|
+| NORMAL | 32,000 | 32,000 |
+| HOTSPOT | 32,000 | 32,000 |
+| CAPACITY_OVER | 6,400 | 6,400 |
+| DUPLICATE | 3,200 | 3,200 |
+| PREREQUISITE_FAIL | 3,200 | 3,200 |
+| TIME_CONFLICT | 3,200 | 3,200 |
+
+### Payload expected_status distribution
+
+| expected_status | Expected | Actual |
+|---|---:|---:|
+| 200 | 64,000 | 64,000 |
+| 400 | 16,000 | 16,000 |
 
 ## Key distributions
 
@@ -104,7 +124,7 @@ Overall: **PASS**
 
 - 파일: `validation_coverage.png`
 - 목적: 성능·도메인 테스트에 필요한 주요 시나리오가 실제 payload에 포함되었는지 검증
-- 해석: NORMAL 64,000건, HOTSPOT 48,000건, 선수과목/시간충돌 각 3,200/3,200건이며 CREDIT_LIMIT은 엔티티 제약으로 N/A
+- 해석: NORMAL 32,000건, HOTSPOT 48,000건, 선수과목/시간충돌 각 3,200/3,200건이며 CREDIT_LIMIT은 엔티티 제약으로 N/A
 - 결과: **PASS**
 
 ![Generated Test Scenario Coverage](../charts/validation_coverage.png)

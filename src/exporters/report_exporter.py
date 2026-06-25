@@ -77,6 +77,8 @@ class ReportExporter:
             "# Payload Integrity Validation", "",
             f"Overall: **{'PASS' if total == 0 else 'FAIL'}**", "",
             "| Check | Failures |", "|---|---:|",
+            f"| Scenario distribution mismatch count | {metric.get('scenario_distribution_mismatch_count', 0):,} |",
+            f"| Expected status distribution mismatch count | {metric.get('expected_status_distribution_mismatch_count', 0):,} |",
             f"| Payload duplicate count | {metric['payload_duplicate_count']:,} |",
             f"| Invalid NORMAL count | {metric['invalid_normal_count']:,} |",
             f"| Invalid CAPACITY_OVER count | {metric['invalid_capacity_over_count']:,} |",
@@ -85,6 +87,20 @@ class ReportExporter:
             f"| Invalid PREREQUISITE_FAIL count | {metric['invalid_prerequisite_fail_count']:,} |",
             f"| Scenario label inconsistency count | {metric['scenario_label_inconsistency_count']:,} |",
             f"| Total actionable failures | {total:,} |", "",
+            "## Scenario distribution", "",
+            "| scenario_type | Expected | Actual |", "|---|---:|---:|",
+            *[
+                f"| {scenario_type} | {expected:,} | {metric.get('scenario_distribution_actual', {}).get(scenario_type, 0):,} |"
+                for scenario_type, expected in metric.get("scenario_distribution_expected", {}).items()
+            ],
+            "",
+            "## Expected status distribution", "",
+            "| expected_status | Expected | Actual |", "|---|---:|---:|",
+            *[
+                f"| {expected_status} | {expected:,} | {metric.get('expected_status_distribution_actual', {}).get(expected_status, 0):,} |"
+                for expected_status, expected in metric.get("expected_status_distribution_expected", {}).items()
+            ],
+            "",
             "The payload is validated in scheduled execution order using `scheduled_offset_ms` and request_id as a stable tie-breaker.",
         ])
 
@@ -180,7 +196,7 @@ class ReportExporter:
             f"- TIME_CONFLICT payloads checked: {metric['target_requests']:,}",
             f"- Correctly constructed conflict cases: {metric['correct_conflict_cases']:,}",
             f"- Invalid cases: {failed:,}", "",
-            "Baseline enrollment is intentionally empty. TIME_CONFLICT verification compares each targeted request with a NORMAL request for the same student.", "",
+            "Baseline enrollment is intentionally empty. TIME_CONFLICT verification compares each targeted request with a prior NORMAL/HOTSPOT success request for the same student in scheduled execution order.", "",
             "![Timeslot heatmap](../charts/timeslot_heatmap.png)",
         ]
         self._write(path, lines)
@@ -234,6 +250,8 @@ class ReportExporter:
             f"- Total actionable failures: {payload_actionable_failures:,}", "",
             "## Payload integrity validation", "",
             f"- Payload duplicate count: {payload_integrity.get('payload_duplicate_count', 0):,}",
+            f"- Scenario distribution mismatch count: {payload_integrity.get('scenario_distribution_mismatch_count', 0):,}",
+            f"- Expected status distribution mismatch count: {payload_integrity.get('expected_status_distribution_mismatch_count', 0):,}",
             f"- Invalid NORMAL count: {payload_integrity.get('invalid_normal_count', 0):,}",
             f"- Invalid CAPACITY_OVER count: {payload_integrity.get('invalid_capacity_over_count', 0):,}",
             f"- Invalid DUPLICATE count: {payload_integrity.get('invalid_duplicate_count', 0):,}",
@@ -241,6 +259,20 @@ class ReportExporter:
             f"- Invalid PREREQUISITE_FAIL count: {payload_integrity.get('invalid_prerequisite_fail_count', 0):,}",
             f"- Scenario label inconsistency count: {payload_integrity.get('scenario_label_inconsistency_count', 0):,}",
             f"- Payload actionable failures: {payload_actionable_failures:,}", "",
+            "### Payload scenario distribution", "",
+            "| scenario_type | Expected | Actual |", "|---|---:|---:|",
+            *[
+                f"| {scenario_type} | {expected:,} | {payload_integrity.get('scenario_distribution_actual', {}).get(scenario_type, 0):,} |"
+                for scenario_type, expected in payload_integrity.get("scenario_distribution_expected", {}).items()
+            ],
+            "",
+            "### Payload expected_status distribution", "",
+            "| expected_status | Expected | Actual |", "|---|---:|---:|",
+            *[
+                f"| {expected_status} | {expected:,} | {payload_integrity.get('expected_status_distribution_actual', {}).get(expected_status, 0):,} |"
+                for expected_status, expected in payload_integrity.get("expected_status_distribution_expected", {}).items()
+            ],
+            "",
             "## Key distributions", "",
             f"- Hotspot courses: {analysis['hotspot']['hotspot_course_count']:,}/{analysis['hotspot']['course_total']:,} ({analysis['hotspot']['course_ratio']:.2%})",
             f"- Hotspot requests: {analysis['hotspot']['hotspot_request_count']:,}/{analysis['hotspot']['request_total']:,} ({analysis['hotspot']['request_ratio']:.2%})",

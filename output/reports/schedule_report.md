@@ -9,6 +9,6 @@ Result: **PASS**
 - Correctly constructed conflict cases: 3,200
 - Invalid cases: 0
 
-Baseline enrollment is intentionally empty. TIME_CONFLICT verification compares each targeted request with a NORMAL request for the same student.
+Baseline enrollment is intentionally empty. TIME_CONFLICT verification compares each targeted request with a prior NORMAL/HOTSPOT success request for the same student in scheduled execution order.
 
 ![Timeslot heatmap](../charts/timeslot_heatmap.png)

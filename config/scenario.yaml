@@ -33,9 +33,9 @@ payload:
   credit_limit_ratio: 0.00
   expected_status:
     NORMAL: 200
+    HOTSPOT: 200
     CAPACITY_OVER: 400
     DUPLICATE: 400
     PREREQUISITE_FAIL: 400
     TIME_CONFLICT: 400
     CREDIT_LIMIT: 400
-
