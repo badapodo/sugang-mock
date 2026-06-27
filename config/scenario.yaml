@@ -10,15 +10,15 @@ scale:
   prerequisite_course_ratio: 0.20
 
 traffic:
-  active_users: 16000
-  active_user_ratio: 0.40
+  active_users: 32000
+  active_user_ratio: 0.80
   concurrent_user_ratio: 0.40
   hotspot_course_ratio: 0.05
   hotspot_request_ratio: 0.60
   burst_window_ratio: 0.60
 
 course:
-  popular_capacity: 50
+  popular_capacity: 500
   normal_capacity: 100
   max_credit_per_student: 18
 

@@ -1,5 +1,7 @@
 from collections import Counter, defaultdict
-from math import floor
+from math import ceil, floor
+
+from .base import AUDIT_NULLS
 
 
 SCENARIO_RATIO_KEYS = {
@@ -54,23 +56,19 @@ class StatefulPayloadBuilder:
             self.prerequisites[(row["course_id"], row["department_id"])].append(row["pre_course_id"])
             self.prerequisite_course_ids.add(row["course_id"])
 
-        all_students = [row["student_id"] for row in context.data["student"]]
-        active_count = self.scenario["traffic"]["active_users"]
-        if active_count > len(all_students):
-            raise ValueError("traffic.active_users cannot exceed scale.students")
-        self.active_students = context.random.sample(all_students, active_count)
-        context.metadata["active_student_ids"] = set(self.active_students)
-
         self.student_enrolled_courses = defaultdict(set)
         self.student_enrolled_timeslots = defaultdict(list)
         self.course_success_count = Counter()
         self.used_student_course_pairs = set()
+        self.seed_enrollment_pairs = set()
         self.success_pairs = []
         self.rows = []
 
         self.safe_hotspot_ids = [course_id for course_id in self.hotspot_ids if course_id not in self.prerequisite_course_ids]
         self.prerequisite_hotspot_ids = [course_id for course_id in self.hotspot_ids if course_id in self.prerequisite_course_ids]
         self.safe_normal_ids = [course_id for course_id in self.normal_ids if course_id not in self.prerequisite_course_ids]
+        self._allocate_scenario_pools()
+        self._prepare_seed_state()
 
     def build(self):
         self._assert_label_contract()
@@ -90,10 +88,10 @@ class StatefulPayloadBuilder:
             raise ValueError("scenario ratios require more hotspot failures than total hotspot target")
 
         self._build_successes(hotspot_success_count, normal_success_count)
-        self._build_capacity_over(self.counts["CAPACITY_OVER"])
-        self._build_duplicate(self.counts["DUPLICATE"])
-        self._build_time_conflict(self.counts["TIME_CONFLICT"])
-        self._build_prerequisite_fail(self.counts["PREREQUISITE_FAIL"])
+        self._build_capacity_over()
+        self._build_duplicate()
+        self._build_time_conflict()
+        self._build_prerequisite_fail()
 
         if len(self.rows) != self.total:
             raise RuntimeError(f"payload size mismatch: actual={len(self.rows)}, expected={self.total}")
@@ -196,87 +194,263 @@ class StatefulPayloadBuilder:
         self.success_pairs.append((student_id, course_id))
         self._append_row(student_id, course_id, scenario_type)
 
-    def _build_capacity_over(self, count):
-        full_courses = [course_id for course_id in self.hotspot_ids if self.course_success_count[course_id] >= self.courses[course_id]["capacity"]]
-        if not full_courses and count:
-            raise RuntimeError("CAPACITY_OVER requires at least one full hotspot course")
-        for index in range(count):
-            course_id = full_courses[index % len(full_courses)]
-            student_id = self._find_unused_student_for_course(course_id)
+    def _build_capacity_over(self):
+        for student_id, course_id in self.capacity_plan:
             self._append_row(student_id, course_id, "CAPACITY_OVER")
 
-    def _build_duplicate(self, count):
-        hotspot_pairs = [(student_id, course_id) for student_id, course_id in self.success_pairs if course_id in self.hotspot_ids]
-        if not hotspot_pairs and count:
-            raise RuntimeError("DUPLICATE requires a prior successful hotspot pair")
-        for index in range(count):
-            student_id, course_id = hotspot_pairs[index % len(hotspot_pairs)]
+    def _build_duplicate(self):
+        for student_id, course_id in self.duplicate_plan:
             self._append_row(student_id, course_id, "DUPLICATE")
 
-    def _build_time_conflict(self, count):
-        for _ in range(count):
-            candidate = self._find_time_conflict_candidate()
-            if not candidate:
-                raise RuntimeError("TIME_CONFLICT requires an unused overlapping course for a student with prior success")
-            student_id, course_id = candidate
+    def _build_time_conflict(self):
+        for student_id, course_id in self.time_conflict_plan:
             self._append_row(student_id, course_id, "TIME_CONFLICT")
 
-    def _find_time_conflict_candidate(self):
-        candidate_courses = [
-            course_id for course_id in self.safe_hotspot_ids
-            if self.course_success_count[course_id] < self.courses[course_id]["capacity"]
-        ]
-        self.context.random.shuffle(candidate_courses)
-        students = list(self.active_students)
-        self.context.random.shuffle(students)
-        for student_id in students:
-            if not self.student_enrolled_timeslots[student_id]:
-                continue
-            for course_id in candidate_courses:
-                if (student_id, course_id) in self.used_student_course_pairs:
-                    continue
-                if course_id in self.completed[student_id]:
-                    continue
-                if self._has_time_conflict(student_id, course_id):
-                    return student_id, course_id
-        return None
-
-    def _build_prerequisite_fail(self, count):
-        candidates_by_course = {}
-        for course_id in self.prerequisite_hotspot_ids:
-            candidates = []
-            if self.course_success_count[course_id] >= self.courses[course_id]["capacity"]:
-                continue
-            for student_id in self.active_students:
-                if (student_id, course_id) in self.used_student_course_pairs:
-                    continue
-                if course_id in self.completed[student_id]:
-                    continue
-                required = self.prerequisites.get((course_id, self.department_by_student[student_id]), [])
-                if required and any(course not in self.completed[student_id] for course in required):
-                    candidates.append((student_id, course_id))
-                    if len(candidates) >= 200:
-                        break
-            if candidates:
-                candidates_by_course[course_id] = candidates
-        if not candidates_by_course and count:
-            raise RuntimeError("PREREQUISITE_FAIL requires missing-prerequisite candidates")
-        course_ids = sorted(candidates_by_course)
-        per_course_index = Counter()
-        for index in range(count):
-            course_id = course_ids[index % len(course_ids)]
-            candidates = candidates_by_course[course_id]
-            student_id, course_id = candidates[per_course_index[course_id] % len(candidates)]
-            per_course_index[course_id] += 1
+    def _build_prerequisite_fail(self):
+        for student_id, course_id in self.prerequisite_plan:
             self._append_row(student_id, course_id, "PREREQUISITE_FAIL")
 
-    def _find_unused_student_for_course(self, course_id):
-        start = self.context.random.randint(0, len(self.active_students) - 1)
-        for offset in range(len(self.active_students)):
-            student_id = self.active_students[(start + offset) % len(self.active_students)]
-            if (student_id, course_id) not in self.used_student_course_pairs:
-                return student_id
-        raise RuntimeError(f"cannot find unused student for course_id={course_id}")
+    def _allocate_scenario_pools(self):
+        all_students = [row["student_id"] for row in self.context.data["student"]]
+        prerequisite_candidates = []
+        prerequisite_course_by_student = {}
+        for student_id in all_students:
+            department_id = self.department_by_student[student_id]
+            candidates = [
+                course_id
+                for course_id in self.prerequisite_hotspot_ids
+                if course_id not in self.completed[student_id]
+                and any(
+                    required not in self.completed[student_id]
+                    for required in self.prerequisites.get((course_id, department_id), [])
+                )
+            ]
+            if candidates:
+                prerequisite_candidates.append(student_id)
+                prerequisite_course_by_student[student_id] = candidates
+
+        prerequisite_count = self.counts["PREREQUISITE_FAIL"]
+        if len(prerequisite_candidates) < prerequisite_count:
+            raise RuntimeError(
+                f"not enough independent PREREQUISITE_FAIL students: "
+                f"actual={len(prerequisite_candidates)}, required={prerequisite_count}"
+            )
+        self.context.random.shuffle(prerequisite_candidates)
+        self.prerequisite_students = prerequisite_candidates[:prerequisite_count]
+        self.prerequisite_plan = [
+            (student_id, self.context.random.choice(prerequisite_course_by_student[student_id]))
+            for student_id in self.prerequisite_students
+        ]
+
+        reserved_students = set(self.prerequisite_students)
+        remaining_students = [student_id for student_id in all_students if student_id not in reserved_students]
+        self.context.random.shuffle(remaining_students)
+        success_count = self.scenario["traffic"]["active_users"] - sum(
+            self.counts[name]
+            for name in ("CAPACITY_OVER", "DUPLICATE", "PREREQUISITE_FAIL", "TIME_CONFLICT")
+        )
+        required_students = (
+            success_count
+            + self.counts["DUPLICATE"]
+            + self.counts["TIME_CONFLICT"]
+            + self.counts["CAPACITY_OVER"]
+        )
+        if success_count <= 0 or len(remaining_students) < required_students:
+            raise RuntimeError("traffic.active_users does not leave enough disjoint scenario students")
+
+        cursor = 0
+        self.active_students = remaining_students[cursor:cursor + success_count]
+        cursor += success_count
+        self.duplicate_students = remaining_students[cursor:cursor + self.counts["DUPLICATE"]]
+        cursor += self.counts["DUPLICATE"]
+        self.time_conflict_students = remaining_students[cursor:cursor + self.counts["TIME_CONFLICT"]]
+        cursor += self.counts["TIME_CONFLICT"]
+        self.capacity_students = remaining_students[cursor:cursor + self.counts["CAPACITY_OVER"]]
+        cursor += self.counts["CAPACITY_OVER"]
+        self.seed_filler_students = remaining_students[cursor:]
+
+        payload_students = (
+            set(self.active_students)
+            | set(self.duplicate_students)
+            | set(self.time_conflict_students)
+            | set(self.capacity_students)
+            | set(self.prerequisite_students)
+        )
+        if len(payload_students) != self.scenario["traffic"]["active_users"]:
+            raise RuntimeError("scenario student pools overlap or do not match traffic.active_users")
+        self.context.metadata["active_student_ids"] = payload_students
+        self.context.metadata["scenario_student_ids"] = {
+            "SUCCESS": set(self.active_students),
+            "DUPLICATE": set(self.duplicate_students),
+            "TIME_CONFLICT": set(self.time_conflict_students),
+            "CAPACITY_OVER": set(self.capacity_students),
+            "PREREQUISITE_FAIL": set(self.prerequisite_students),
+        }
+
+    def _prepare_seed_state(self):
+        available_hotspot = [
+            course_id
+            for course_id in self.safe_hotspot_ids
+            if course_id not in {course_id for _, course_id in self.prerequisite_plan}
+        ]
+        capacity_course_count = max(
+            1,
+            ceil(self.counts["CAPACITY_OVER"] / self.courses[available_hotspot[0]]["capacity"])
+        )
+        self.capacity_course_ids = available_hotspot[:capacity_course_count]
+        cursor = capacity_course_count
+
+        duplicate_course_count = max(
+            1,
+            ceil(self.counts["DUPLICATE"] / self.courses[available_hotspot[cursor]]["capacity"])
+        )
+        self.duplicate_course_ids = available_hotspot[cursor:cursor + duplicate_course_count]
+        cursor += duplicate_course_count
+
+        time_course_count = max(
+            1,
+            ceil(self.counts["TIME_CONFLICT"] / self.scenario["course"]["normal_capacity"])
+        )
+        self.time_conflict_course_ids = available_hotspot[cursor:cursor + time_course_count]
+        if len(self.time_conflict_course_ids) != time_course_count:
+            raise RuntimeError("not enough disjoint hotspot courses for failure scenarios")
+
+        excluded_hotspot = (
+            set(self.capacity_course_ids)
+            | set(self.duplicate_course_ids)
+            | set(self.time_conflict_course_ids)
+            | {course_id for _, course_id in self.prerequisite_plan}
+        )
+        self.safe_hotspot_ids = [
+            course_id for course_id in self.safe_hotspot_ids if course_id not in excluded_hotspot
+        ]
+
+        time_seed_by_target = self._find_time_seed_courses(self.time_conflict_course_ids)
+        time_seed_course_ids = set(time_seed_by_target.values())
+        self.safe_normal_ids = [
+            course_id for course_id in self.safe_normal_ids if course_id not in time_seed_course_ids
+        ]
+
+        self.capacity_plan = []
+        for index, student_id in enumerate(self.capacity_students):
+            course_id = self._find_allowed_course(
+                student_id,
+                self.capacity_course_ids,
+                start_index=index
+            )
+            self.capacity_plan.append((student_id, course_id))
+
+        if not self.seed_filler_students:
+            raise RuntimeError("CAPACITY_OVER requires seed-only filler students")
+        seed_index = 0
+        for course_id in self.capacity_course_ids:
+            for _ in range(self.courses[course_id]["capacity"]):
+                student_id = self.seed_filler_students[seed_index % len(self.seed_filler_students)]
+                seed_index += 1
+                self._append_seed_enrollment(student_id, course_id)
+
+        self.duplicate_plan = []
+        for index, student_id in enumerate(self.duplicate_students):
+            course_id = self._find_allowed_course(
+                student_id,
+                self.duplicate_course_ids,
+                start_index=index
+            )
+            self._append_seed_enrollment(student_id, course_id)
+            self.duplicate_plan.append((student_id, course_id))
+
+        self.time_conflict_plan = []
+        time_seed_counts = Counter()
+        for index, student_id in enumerate(self.time_conflict_students):
+            target_course_id = self._find_time_conflict_target(
+                student_id=student_id,
+                target_course_ids=self.time_conflict_course_ids,
+                seed_course_by_target=time_seed_by_target,
+                seed_counts=time_seed_counts,
+                start_index=index,
+            )
+            seed_course_id = time_seed_by_target[target_course_id]
+            self._append_seed_enrollment(student_id, seed_course_id)
+            time_seed_counts[seed_course_id] += 1
+            self.time_conflict_plan.append((student_id, target_course_id))
+
+        seed_counts = Counter(row["course_id"] for row in self.context.data["enrollment"])
+        for course_id, count in seed_counts.items():
+            if count > self.courses[course_id]["capacity"]:
+                raise RuntimeError(
+                    f"seed enrollment exceeds capacity: course_id={course_id}, "
+                    f"seed={count}, capacity={self.courses[course_id]['capacity']}"
+                )
+            self.courses[course_id]["current_count"] = count
+        self.context.metadata["seed_enrollment_count"] = len(self.context.data["enrollment"])
+        self.context.metadata["scenario_course_ids"] = {
+            "SUCCESS_HOTSPOT": set(self.safe_hotspot_ids),
+            "SUCCESS_NORMAL": set(self.safe_normal_ids),
+            "DUPLICATE": set(self.duplicate_course_ids),
+            "TIME_CONFLICT": set(self.time_conflict_course_ids),
+            "CAPACITY_OVER": set(self.capacity_course_ids),
+            "PREREQUISITE_FAIL": {course_id for _, course_id in self.prerequisite_plan},
+        }
+
+    def _find_time_seed_courses(self, target_course_ids):
+        result = {}
+        used = set()
+        for target_course_id in target_course_ids:
+            target_time = self.course_times[target_course_id]
+            seed_course_id = next(
+                (
+                    course_id
+                    for course_id in self.safe_normal_ids
+                    if course_id not in used
+                    and self._overlaps(target_time, self.course_times[course_id])
+                ),
+                None,
+            )
+            if seed_course_id is None:
+                raise RuntimeError(f"no independent seed course overlaps TIME_CONFLICT target={target_course_id}")
+            result[target_course_id] = seed_course_id
+            used.add(seed_course_id)
+        return result
+
+    def _find_allowed_course(self, student_id, course_ids, start_index):
+        for offset in range(len(course_ids)):
+            course_id = course_ids[(start_index + offset) % len(course_ids)]
+            if course_id not in self.completed[student_id]:
+                return course_id
+        raise RuntimeError(f"student_id={student_id} has completed every course in scenario pool")
+
+    def _find_time_conflict_target(
+            self,
+            student_id,
+            target_course_ids,
+            seed_course_by_target,
+            seed_counts,
+            start_index,
+    ):
+        for offset in range(len(target_course_ids)):
+            target_course_id = target_course_ids[(start_index + offset) % len(target_course_ids)]
+            seed_course_id = seed_course_by_target[target_course_id]
+            if target_course_id in self.completed[student_id]:
+                continue
+            if seed_counts[seed_course_id] >= self.courses[seed_course_id]["capacity"]:
+                continue
+            return target_course_id
+        raise RuntimeError(
+            f"no TIME_CONFLICT target with remaining seed capacity for student_id={student_id}"
+        )
+
+    def _append_seed_enrollment(self, student_id, course_id):
+        enrollment = self.context.data["enrollment"]
+        pair = (student_id, course_id)
+        if pair in self.seed_enrollment_pairs:
+            raise RuntimeError(f"duplicate seed enrollment student_id={student_id}, course_id={course_id}")
+        self.seed_enrollment_pairs.add(pair)
+        enrollment.append({
+            "id": len(enrollment) + 1,
+            "student_id": student_id,
+            "course_id": course_id,
+            **AUDIT_NULLS,
+        })
 
     def _append_row(self, student_id, course_id, scenario_type):
         self.rows.append({

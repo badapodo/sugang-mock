@@ -13,7 +13,7 @@ Overall: **PASS**
 | `course_time` | 4,000 |
 | `prerequisite` | 800 |
 | `completed_course` | 200,000 |
-| `enrollment` | 0 |
+| `enrollment` | 12,900 |
 | `enrollment_payload` | 80,000 |
 
 ## Validation results
@@ -97,8 +97,8 @@ Overall: **PASS**
 
 - 파일: `course_request_rank_distribution.png`
 - 목적: 상위 5% 과목에 요청이 집중되고 Hotspot/Normal 경계가 분리되는지 검증
-- 해석: Rank 200 경계에서 최소 hotspot 요청 35건, 최대 normal 요청 11건으로 급격한 감소가 확인됨
-- 결과: **PASS**
+- 해석: Rank 200 경계에서 최소 hotspot 요청 11건, 최대 normal 요청 11건으로 급격한 감소가 확인됨
+- 결과: **FAIL**
 
 ![Course Request Rank Distribution](../charts/course_request_rank_distribution.png)
 
@@ -106,8 +106,8 @@ Overall: **PASS**
 
 - 파일: `hotspot_competition.png`
 - 목적: 상위 20개 인기 과목이 정원을 초과하는 경쟁 상태인지 검증
-- 해석: 상위 20개 과목의 요청은 평균 정원의 1.8배이며 모두 정원을 초과함
-- 결과: **PASS**
+- 해석: 상위 20개 과목의 요청은 평균 정원의 1.0배이며 모두 정원을 초과함
+- 결과: **FAIL**
 
 ![Hotspot Competition](../charts/hotspot_competition.png)
 
@@ -142,8 +142,8 @@ Overall: **PASS**
 
 - 파일: `course_capacity_utilization.png`
 - 목적: 강의별 요청 수/정원 비율과 hotspot 과목의 초과 경쟁 상태를 검증
-- 해석: Hotspot 200개 중 128개가 정원 대비 100% 이상의 요청을 받아 CAPACITY_OVER 검증용 초과 경쟁 풀을 형성함
-- 결과: **PASS**
+- 해석: Hotspot 200개 중 64개가 정원 대비 100% 이상의 요청을 받아 CAPACITY_OVER 검증용 초과 경쟁 풀을 형성함
+- 결과: **FAIL**
 
 ![Course Capacity Utilization](../charts/course_capacity_utilization.png)
 

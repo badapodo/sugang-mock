@@ -41,7 +41,7 @@ class Pipeline:
             generator.generate(context)
         context.data["enrollment"] = []
 
-        print("[3/8] Generate k6 payload")
+        print("[3/8] Generate seed enrollments and k6 payload")
         PayloadGenerator().generate(context)
 
         print("[4/8] Validate generated data")

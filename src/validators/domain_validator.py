@@ -15,7 +15,7 @@ class DomainValidator:
             "course_time": scenario["scale"]["courses"] * scenario["scale"]["course_times_per_course"],
             "prerequisite": round(scenario["scale"]["courses"] * scenario["scale"]["prerequisite_course_ratio"]),
             "completed_course": scenario["scale"]["students"] * scenario["scale"]["avg_courses_per_student"],
-            "enrollment": 0,
+            "enrollment": context.metadata.get("seed_enrollment_count", 0),
         }
         results = []
         mismatches = {name: (len(context.data.get(name, [])), count) for name, count in expected.items() if len(context.data.get(name, [])) != count}

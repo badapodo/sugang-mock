@@ -117,6 +117,12 @@ class PayloadValidator:
         accepted_pairs = set()
         accepted_count_by_course = Counter()
         accepted_pair_first_request = {}
+        for enrollment in context.data["enrollment"]:
+            student_id = enrollment["student_id"]
+            course_id = enrollment["course_id"]
+            accepted_by_student[student_id].append(course_id)
+            accepted_pairs.add((student_id, course_id))
+            accepted_count_by_course[course_id] += 1
 
         invalid_normal = []
         invalid_capacity_over = []
@@ -200,18 +206,18 @@ class PayloadValidator:
             if scenario_type == "CAPACITY_OVER":
                 capacity = courses[course_id]["capacity"]
                 if accepted_count_by_course[course_id] < capacity:
-                    invalid_capacity_over.append(self._failure(row, f"capacity not yet exceeded; accepted_success={accepted_count_by_course[course_id]}, capacity={capacity}"))
+                    invalid_capacity_over.append(self._failure(row, f"capacity not full in seed state; enrolled={accepted_count_by_course[course_id]}, capacity={capacity}"))
                 continue
 
             if scenario_type == "DUPLICATE":
                 if pair not in accepted_pairs:
-                    invalid_duplicate.append(self._failure(row, "no prior successful request for same student_id/course_id"))
+                    invalid_duplicate.append(self._failure(row, "same student_id/course_id does not exist in seed enrollment"))
                 continue
 
             if scenario_type == "TIME_CONFLICT":
                 conflict_course_id = self._find_conflict(course_id, accepted_by_student[student_id], time_by_course)
                 if conflict_course_id is None:
-                    reason = "no prior successful course for student" if not accepted_by_student[student_id] else "no overlapping prior successful course"
+                    reason = "no seed enrollment for student" if not accepted_by_student[student_id] else "no overlapping seed enrollment"
                     invalid_time_conflict.append(self._failure(row, reason))
                 continue
 

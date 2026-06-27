@@ -44,6 +44,8 @@ class ValidationAnalyzer:
 
         time_by_course = {row["course_id"]: row for row in context.data["course_time"]}
         success_by_student = defaultdict(list)
+        for enrollment in context.data["enrollment"]:
+            success_by_student[enrollment["student_id"]].append(enrollment["course_id"])
         time_targets = []
         missing_conflicts = []
         ordered_payload = sorted(enumerate(payload, 1), key=lambda item: (item[1]["scheduled_offset_ms"], item[0]))
